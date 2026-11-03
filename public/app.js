@@ -571,7 +571,7 @@ main.addEventListener('click', async (e) => {
       const out = await api('POST', '/api/criteria/compile', { title: f.elements.title.value, description: f.elements.description.value });
       draft = { criteria: out.criteria, source: out.source };
       renderDraftCriteria();
-      toast(`Drafted ${out.criteria.length} criteria`);
+      toast(out.notice || `Drafted ${out.criteria.length} criteria`);
     });
   }
   if (act === 'remove-crit') { draft.criteria.splice(Number(btn.dataset.i), 1); draft.source = 'edited'; return renderDraftCriteria(); }

@@ -218,11 +218,19 @@ export function createAI(aiConfig) {
         'For has_element prefer robust selectors, e.g. form input[type=email] rather than deep class chains.',
         'Never guess class names, ids or data attributes: the freelancer has not built the page yet. Only use a class or id if the brief itself names it. To count things like menu items or testimonials, use ai_review instead.',
       ].join('\n');
-      const input = await callModel({
-        system,
-        tool: COMPILE_TOOL,
-        content: `Job title: ${title || '(untitled)'}\n\nBrief:\n<brief>\n${description}\n</brief>`,
-      });
+      let input;
+      try {
+        input = await callModel({
+          system,
+          tool: COMPILE_TOOL,
+          content: `Job title: ${title || '(untitled)'}\n\nBrief:\n<brief>\n${description}\n</brief>`,
+        });
+      } catch (err) {
+        // Drafting criteria is only a suggestion both sides review, so keep the app usable
+        // (e.g. AI quota exhausted during judging) by falling back to the offline drafter.
+        console.error(`[ai] criteria drafting failed, using offline drafter: ${err.message}`);
+        return { criteria: heuristicCompile(description), source: 'heuristic', notice: 'The AI was unavailable, so these criteria were drafted offline. Review them before creating the deal.' };
+      }
       const criteria = (input.criteria || []).slice(0, 12).map(sanitizeCriterion).map((c) => guardSelector(c, `${title || ''}\n${description}`));
       if (!criteria.length) throw new Error('No criteria could be drafted from this brief.');
       return { criteria, source: provider };

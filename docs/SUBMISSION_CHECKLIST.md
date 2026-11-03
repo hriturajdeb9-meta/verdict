@@ -1,6 +1,6 @@
 # Submission checklist
 
-Deadline on the Devpost page: **13 Nov 2026, 1:30 am IST** (12 Nov, 3:00 pm EST). Aim to submit by 11 Nov.
+Deadline: **Thu 12 Nov 2026, 12:00 pm Pacific = 13 Nov, 1:30 am IST.** Judging runs until **15 Dec 2026**, so keep these working until then: the Render service, the PayPal sandbox app and its keys, the Gemini key, the sandbox buyer password, and the public YouTube video and repo.
 
 ## Day 1: make it real
 - [ ] Create a PayPal sandbox app; put the Client ID and Secret in `.env`.
@@ -35,3 +35,7 @@ Deadline on the Devpost page: **13 Nov 2026, 1:30 am IST** (12 Nov, 3:00 pm EST)
 - [ ] Screenshots: home page, criteria drafted, Held ruling with fix notes, Released ruling, injection warning.
 - [ ] Built-with tags.
 - [ ] Submit, then reopen the page to confirm it shows as submitted.
+
+## Prizes this project targets
+- Grand prizes, plus the honorable mentions *Best Use of PayPal + AI*, *Most Creative* and *Best Demo Delivery*.
+- **Best Use of Render** (sponsor prize): eligible because the demo runs on Render. A project can win one grand or honorable-mention prize plus one sponsor prize.

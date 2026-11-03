@@ -40,7 +40,7 @@ Verdict also defends itself. A deliverable is written by the person who wants to
 - **AI:** Google Gemini (`gemini-3.6-flash`, with automatic fallback across Flash models) via `generateContent` with forced function calling for structured output; the same pipeline also runs on Anthropic Claude. One function compiles criteria; another records rulings, a summary and fix notes. The arbiter's prompt marks the deliverable as untrusted and passes code-measured results as facts it may not contradict.
 - **Evidence:** our own HTML parser and CSS selector engine (no dependencies) to inspect forms, headings, visible versus hidden text and API responses, plus the GitHub API for repository evidence.
 - **Front end:** vanilla JavaScript, no build step. Every ruling is "stamped" (Released, Held or Review), and an audit trail shows every PayPal ID.
-- **Tests:** 18 `node:test` tests run the full flow end to end, against a built-in PayPal simulator and fake Gemini and Claude APIs. A separate `npm run sandbox-check` script verifies every PayPal call against the real sandbox.
+- **Tests:** 19 `node:test` tests run the full flow end to end, against a built-in PayPal simulator and fake Gemini and Claude APIs. A separate `npm run sandbox-check` script verifies every PayPal call against the real sandbox.
 
 ## Tools used (model and AI service)
 
@@ -54,7 +54,9 @@ Verdict also defends itself. A deliverable is written by the person who wants to
   - Payouts v1
   - JavaScript SDK
 - **GitHub REST API** for optional repository evidence.
-- **Render** for hosting.
+- **Render** (hackathon sponsor tool) hosts the live demo. It's deployed as a Blueprint from `render.yaml`, auto-deploys on every push, and keeps secrets in Render environment variables. This makes the project eligible for the Best Use of Render sponsor prize.
+
+- **Development:** written in Node.js with an AI coding assistant (Claude) used as a pair programmer. The concept, product decisions and testing are ours.
 
 ## Challenges we ran into
 
@@ -84,7 +86,7 @@ PayPal's authorize-and-capture flow is an underused superpower. It turns "pay no
 
 - **Hosted demo:** https://verdict-jpko.onrender.com (free hosting: the first load after a quiet period can take up to a minute)
 - **Repository:** https://github.com/hriturajdeb9-meta/verdict (see README → Quick start; `npm start`, no install needed)
-- **PayPal sandbox buyer account to approve the hold:** sb-xu5bt53702379@personal.example.com / [sandbox buyer password]
+- **PayPal sandbox buyer account to approve the hold:** sb-xu5bt53702379@personal.example.com / [PASTE SANDBOX BUYER PASSWORD HERE]. It's a sandbox test account with no real money.
 - The sample brief pre-fills a sandbox freelancer email, so the payout lands in a real sandbox account.
 - If the PayPal window is blocked by your browser, use **Continue to PayPal in this tab** under the PayPal button.
 - **Fastest path:**

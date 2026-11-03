@@ -12,6 +12,18 @@ Verdict is a conditional-payment app for freelance work. The client's money is *
 
 ---
 
+## For judges: test it in 2 minutes
+
+- **Hosted demo:** https://verdict-jpko.onrender.com. It runs on the real PayPal sandbox with Gemini. It's on Render's free tier, so the first load after a quiet period can take up to a minute.
+- **PayPal sandbox buyer** (approves the hold): the email and password are in the Devpost testing instructions. It's a sandbox test account with no real money.
+- **Steps:**
+  1. Click **Try it with a sample brief**, then **Draft criteria**, then **Create deal**.
+  2. Switch to **Freelancer** and click **Accept criteria**.
+  3. Switch to **Client** and click the PayPal button, or **Continue to PayPal in this tab** if your browser blocks the popup. Log in as the sandbox buyer and approve.
+  4. Switch to **Freelancer** and submit **Incomplete site** (the result is HELD with fix notes), then **Finished site** (the result is RELEASED: capture and payout).
+  5. Optional: start a second deal and submit **Site that tries to trick the AI**.
+- **Run it yourself:** `npm start` works with no keys at all (simulated PayPal and an offline arbiter). To use real services, see the next sections.
+
 ## Quick start (30 seconds, no keys)
 
 ```bash
@@ -22,7 +34,7 @@ npm start
 
 Open http://localhost:3000 and click **Try it with a sample brief**. In this mode the top bar shows "PayPal simulated" and "Offline arbiter".
 
-Run the test suite (18 end-to-end and unit tests):
+Run the test suite (19 end-to-end and unit tests):
 
 ```bash
 npm test
@@ -161,6 +173,9 @@ docs/            Devpost write-up, video script, submission checklist
 | `PORT`, `DATA_FILE` | `3000`, `./data/verdict.json` | Server port and storage file |
 
 ## Deploy (Render)
+
+The hosted demo runs on Render, deployed from this repo's `render.yaml` Blueprint, so every push to `main` redeploys automatically.
+
 
 The repo includes `render.yaml`. In Render choose **New → Blueprint**, point it at your fork, and set `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` and `GEMINI_API_KEY` in the dashboard. Data is stored in a JSON file; on Render's free tier it resets on redeploy, which is fine for a demo.
 

@@ -181,7 +181,7 @@ describe('Claude arbiter (fake Messages API)', () => {
       const msg = JSON.parse(body);
       calls.push({ headers: req.headers, msg });
       const tool = msg.tool_choice.name;
-      if (mode === 'down' && tool === 'record_verdict') {
+      if ((mode === 'down' && tool === 'record_verdict') || (mode === 'down-compile' && tool === 'define_acceptance_criteria')) {
         res.writeHead(400, { 'content-type': 'application/json' });
         return res.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: 'simulated outage' } }));
       }
@@ -245,6 +245,15 @@ describe('Claude arbiter (fake Messages API)', () => {
     assert.equal(v.status, 'changes_requested');
     const last = v.submissions[0].verdict.checks.filter((c) => c.method === 'ai').at(-1);
     assert.equal(last.state, 'failed');
+  });
+
+  test('if the AI is down while drafting, the offline drafter keeps the app usable', async () => {
+    mode = 'down-compile';
+    const r = await h.ok('POST', '/api/criteria/compile', { description: 'Bakery landing page.\n- The page loads in under 2 seconds\n- Visitors can join with an email signup form' });
+    mode = 'normal';
+    assert.equal(r.source, 'heuristic');
+    assert.ok(r.notice);
+    assert.ok(r.criteria.length >= 2);
   });
 
   test('if the AI is down, subjective work goes to a human instead of auto-releasing', async () => {

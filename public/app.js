@@ -687,7 +687,7 @@ function actionPanel(v) {
   if (v.status === 'released') {
     const pay = v.paypal;
     p.push(html`<div class="panel stack"><div class="callout pass"><h3>${r === 'freelancer' ? `You've been paid ${money(pay.payoutAmount || v.amount)}` : `${fl} has been paid`}</h3>
-      <p class="small">${v.releasedBy === 'verdict' ? 'Released automatically: every required criterion passed.' : `Released by ${cl} after human review.`} PayPal payout to ${v.freelancer.paypalEmail} is ${String(pay.payoutStatus || 'pending').toLowerCase()}.</p></div></div>`);
+      <p class="small">${v.releasedBy === 'verdict' ? 'Released automatically: every required criterion passed.' : `Released by ${cl} after human review.`} ${pay.payoutStatus === 'SUCCESS' ? `PayPal confirmed the payout to ${v.freelancer.paypalEmail}.` : `The PayPal payout to ${v.freelancer.paypalEmail} is processing.`}</p></div></div>`);
   }
 
   if (v.status === 'cancelled') p.push(html`<div class="panel"><h2>Deal cancelled</h2><p class="muted" style="margin-top:6px">${v.paypal.authorizationId ? 'The PayPal hold was voided. The client was never charged.' : 'No money was held.'}</p></div>`);

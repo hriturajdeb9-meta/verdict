@@ -37,7 +37,7 @@ npm test
    - In the app's **Features** settings, make sure **Payouts** is enabled (it pays the freelancer).
    - Under **Testing Tools → Sandbox Accounts** you'll find a sandbox **Personal** account (the client/buyer who approves the hold) and a **Business** account (the platform that captures and pays out). Create a second Personal account to act as the freelancer and note its email.
 3. **AI arbiter** (pick one):
-   - **Gemini (free tier):** get a key at https://aistudio.google.com → Get API key and put it in `GEMINI_API_KEY`. Default model `gemini-3.8-flash`, falling back to older Flash models automatically (override with `GEMINI_MODEL`).
+   - **Gemini (free tier):** get a key at https://aistudio.google.com → Get API key and put it in `GEMINI_API_KEY`. Default model `gemini-3.6-flash`, falling back to other Flash models automatically when one is busy (override with `GEMINI_MODEL`).
    - **Claude:** put a key from https://console.anthropic.com in `ANTHROPIC_API_KEY` (default model `claude-sonnet-5-5`, override with `ANTHROPIC_MODEL`).
 4. Verify every PayPal call with one command (it prints a link for you to approve the hold as the sandbox buyer):
    ```bash
@@ -150,7 +150,7 @@ docs/            Devpost write-up, video script, submission checklist
 | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | empty | PayPal sandbox app credentials. Empty means simulated PayPal. |
 | `PAYPAL_API_BASE` | `https://api-m.sandbox.paypal.com` | PayPal REST base URL |
 | `GEMINI_API_KEY` | empty | Google Gemini API key (free tier available) |
-| `GEMINI_MODEL` | `gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash-lite,gemini-2.5-flash` | Models to try, in order |
+| `GEMINI_MODEL` | `gemini-3.6-flash,gemini-3.8-flash,gemini-3.5-flash-lite,gemini-2.5-flash` | Models to try, in order |
 | `ANTHROPIC_API_KEY` | empty | Claude API key (used instead of Gemini when set). With no AI key, the offline heuristic arbiter runs. |
 | `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Claude model |
 | `PLATFORM_FEE_PERCENT` | `0` | Fee kept from each payout (0 to 20) |

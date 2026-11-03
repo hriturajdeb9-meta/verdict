@@ -54,7 +54,7 @@ export function createApp(overrides = {}) {
     aiLabel: ai.label,
     platformFeePercent: config.platformFeePercent,
     maxAttempts: config.maxAttempts,
-    demoBrief: DEMO_BRIEF,
+    demoBrief: { ...DEMO_BRIEF, freelancerEmail: process.env.DEMO_FREELANCER_EMAIL || '' },
   }));
 
   route('POST', '/api/criteria/compile', async ({ body }) => {

@@ -163,7 +163,7 @@ function renderNew() {
         </div>
         <div class="grid2">
           <label class="field">Freelancer's name<input type="text" name="freelancerName" maxlength="80" value="${b.freelancerName || ''}" placeholder="Arjun"></label>
-          <label class="field">Freelancer's PayPal email<input type="email" name="freelancerEmail" required placeholder="arjun@example.com"></label>
+          <label class="field">Freelancer's PayPal email<input type="email" name="freelancerEmail" required placeholder="arjun@example.com" value="${b.freelancerEmail || ''}"></label>
         </div>
         ${CONFIG.paypalMode === 'sandbox' ? html`<p class="small muted">Use the email of a PayPal sandbox personal account so the payout lands somewhere you can check.</p>` : ''}
         <div class="btn-row"><button class="btn" type="button" data-act="compile">Draft criteria${CONFIG.aiProvider !== 'heuristic' ? ` with ${CONFIG.aiLabel}` : ''}</button></div>

@@ -45,8 +45,9 @@ export function loadConfig(overrides = {}) {
       timeoutMs: Number(env.AI_TIMEOUT_MS || 90000),
       geminiKey,
       geminiApiBase: env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com',
-      // Tried in order; the first one the API accepts is used for the rest of the run.
-      geminiModels: (env.GEMINI_MODEL || 'gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash-lite,gemini-2.5-flash').split(',').map((m) => m.trim()).filter(Boolean),
+      // Tried in order. A busy (429/503) or missing model hands off to the next one.
+      geminiTimeoutMs: Number(env.GEMINI_TIMEOUT_MS || 30000),
+      geminiModels: (env.GEMINI_MODEL || 'gemini-3.6-flash,gemini-3.8-flash,gemini-3.5-flash-lite,gemini-2.5-flash').split(',').map((m) => m.trim()).filter(Boolean),
     },
     github: { token: env.GITHUB_TOKEN || '' },
   };

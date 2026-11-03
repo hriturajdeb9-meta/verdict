@@ -141,7 +141,8 @@ export function createAI(aiConfig) {
 
   let geminiModel = null; // the first model in the list that the API accepts
   async function callGemini({ system, content, tool, maxTokens = 3000 }) {
-    const models = geminiModel ? [geminiModel] : aiConfig.geminiModels;
+    // Start with the model that last worked, but keep the others as fallbacks.
+    const models = geminiModel ? [geminiModel, ...aiConfig.geminiModels.filter((m) => m !== geminiModel)] : aiConfig.geminiModels;
     let lastErr;
     for (const model of models) {
       // Gemini 3 models think by default; a low thinking level keeps reviews fast.
@@ -161,7 +162,7 @@ export function createAI(aiConfig) {
               toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: [tool.name] } },
               generationConfig,
             }),
-            signal: AbortSignal.timeout(aiConfig.timeoutMs),
+            signal: AbortSignal.timeout(aiConfig.geminiTimeoutMs || aiConfig.timeoutMs),
           });
           const data = await res.json().catch(() => ({}));
           console.log(`[ai] gemini ${model} ${tool.name} -> ${res.status} in ${Date.now() - started} ms`);
@@ -176,7 +177,8 @@ export function createAI(aiConfig) {
           }
           if (res.status === 429 || res.status >= 500) {
             lastErr = new Error(data?.error?.message || `Gemini API ${res.status}`);
-            await new Promise((r) => setTimeout(r, 2500 * (attempt + 1)));
+            if (attempt >= 1) break; // busy twice: hand off to the next model
+            await new Promise((r) => setTimeout(r, 1500));
             continue;
           }
           if (!res.ok) throw new Error(data?.error?.message || `Gemini API ${res.status}`);

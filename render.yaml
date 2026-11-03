@@ -17,3 +17,5 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: DEMO_FREELANCER_EMAIL
+        value: sb-xu5bt53702379@personal.example.com

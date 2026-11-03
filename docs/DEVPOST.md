@@ -37,14 +37,14 @@ Verdict also defends itself. A deliverable is written by the person who wants to
   - `authorizations/{id}/capture` to release it, and `authorizations/{id}/void` to cancel it.
   - Payouts v1 to pay the freelancer, and payout status polling to confirm.
   - Every state-changing call carries a `PayPal-Request-Id`, so retries can never double-charge or double-pay.
-- **AI:** Google Gemini (`gemini-3.8-flash`) via `generateContent` with forced function calling for structured output; the same pipeline also runs on Anthropic Claude. One function compiles criteria; another records rulings, a summary and fix notes. The arbiter's prompt marks the deliverable as untrusted and passes code-measured results as facts it may not contradict.
+- **AI:** Google Gemini (`gemini-3.6-flash`, with automatic fallback across Flash models) via `generateContent` with forced function calling for structured output; the same pipeline also runs on Anthropic Claude. One function compiles criteria; another records rulings, a summary and fix notes. The arbiter's prompt marks the deliverable as untrusted and passes code-measured results as facts it may not contradict.
 - **Evidence:** our own HTML parser and CSS selector engine (no dependencies) to inspect forms, headings, visible versus hidden text and API responses, plus the GitHub API for repository evidence.
 - **Front end:** vanilla JavaScript, no build step. Every ruling is "stamped" (Released, Held or Review), and an audit trail shows every PayPal ID.
 - **Tests:** 17 `node:test` tests run the full flow end to end, against a built-in PayPal simulator and fake Gemini and Claude APIs. A separate `npm run sandbox-check` script verifies every PayPal call against the real sandbox.
 
 ## Tools used (model and AI service)
 
-- **Google Gemini (`gemini-3.8-flash`, Gemini API `generateContent`)**
+- **Google Gemini (`gemini-3.6-flash`, Gemini API `generateContent`)**
   - *Criteria compiler:* converts a plain-English brief into typed acceptance criteria via a forced `define_acceptance_criteria` function call. Output is validated server-side; unsupported selectors are downgraded to AI judgments.
   - *Arbiter:* rules on subjective criteria from collected evidence via a forced `record_verdict` function call, and returns per-criterion pass/fail, confidence, reasoning, an evidence excerpt, a summary and fix notes. A criterion it skips is treated as failed. If the API is down, subjective work goes to a human rather than being released.
 - **Anthropic Claude (optional):** the same compiler and arbiter run on Claude's Messages API with forced tool use when `ANTHROPIC_API_KEY` is set.

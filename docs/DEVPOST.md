@@ -85,13 +85,13 @@ PayPal's authorize-and-capture flow is an underused superpower. It turns "pay no
 ## How judges can test it
 
 - **Demo video:** https://youtu.be/9j7NlBSu078
-- **Hosted demo:** https://verdict-jpko.onrender.com (free hosting: the first load after a quiet period can take up to a minute)
+- **Hosted demo:** https://verdict-jpko.onrender.com (a keep-alive ping keeps it awake; if it has been idle, the first load can take up to a minute)
 - **Repository:** https://github.com/hriturajdeb9-meta/verdict (see README → Quick start; `npm start`, no install needed)
 - **PayPal sandbox buyer account to approve the hold:** sb-xu5bt53702379@personal.example.com / [PASTE SANDBOX BUYER PASSWORD HERE]. It's a sandbox test account with no real money.
 - The sample brief pre-fills a sandbox freelancer email, so the payout lands in a real sandbox account.
 - If the PayPal window is blocked by your browser, use **Continue to PayPal in this tab** under the PayPal button.
 - **Fastest path:**
-  1. Click **Try it with a sample brief**, enter any freelancer email and click **Draft criteria**, then **Create deal**.
+  1. Click **Try the live demo**, then **Draft criteria**, then **Create deal**. The freelancer email is pre-filled.
   2. Switch to **Freelancer** and click **Accept criteria**.
   3. Switch to **Client** and hold the money with PayPal.
   4. Switch to **Freelancer** and submit **Incomplete site**, then **Finished site**.

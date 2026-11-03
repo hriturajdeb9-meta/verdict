@@ -18,6 +18,7 @@ export function loadConfig(overrides = {}) {
   const paypalClientId = env.PAYPAL_CLIENT_ID || '';
   const paypalSecret = env.PAYPAL_CLIENT_SECRET || '';
   const anthropicKey = env.ANTHROPIC_API_KEY || '';
+  const geminiKey = env.GEMINI_API_KEY || env.GOOGLE_API_KEY || '';
   const isProd = env.NODE_ENV === 'production';
 
   const config = {
@@ -37,11 +38,15 @@ export function loadConfig(overrides = {}) {
       currency: 'USD',
     },
     ai: {
-      provider: anthropicKey ? 'anthropic' : 'heuristic',
+      provider: anthropicKey ? 'anthropic' : geminiKey ? 'gemini' : 'heuristic',
       apiKey: anthropicKey,
       model: env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
       apiBase: env.ANTHROPIC_API_BASE || 'https://api.anthropic.com',
       timeoutMs: Number(env.AI_TIMEOUT_MS || 90000),
+      geminiKey,
+      geminiApiBase: env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com',
+      // Tried in order; the first one the API accepts is used for the rest of the run.
+      geminiModels: (env.GEMINI_MODEL || 'gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash-lite,gemini-2.5-flash').split(',').map((m) => m.trim()).filter(Boolean),
     },
     github: { token: env.GITHUB_TOKEN || '' },
   };

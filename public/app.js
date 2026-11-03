@@ -71,10 +71,10 @@ let CONFIG = null;
 async function loadConfig() {
   CONFIG = await api('GET', '/api/config');
   const pp = CONFIG.paypalMode === 'sandbox';
-  const ai = CONFIG.aiProvider === 'anthropic';
+  const ai = CONFIG.aiProvider !== 'heuristic';
   $('#modes').innerHTML = html`
     <span class="chip ${pp ? 'live' : ''}" title="${pp ? 'Real PayPal sandbox API' : 'No PayPal keys set; using the built-in simulator'}"><span class="dot"></span>PayPal ${pp ? 'sandbox' : 'simulated'}</span>
-    <span class="chip ${ai ? 'live' : ''}" title="${ai ? CONFIG.aiModel : 'No ANTHROPIC_API_KEY; using offline heuristics'}"><span class="dot"></span>${ai ? 'Claude arbiter' : 'Offline arbiter'}</span>`.s;
+    <span class="chip ${ai ? 'live' : ''}" title="${ai ? CONFIG.aiModel : 'No AI key set; using offline heuristics'}"><span class="dot"></span>${ai ? `${CONFIG.aiLabel} arbiter` : 'Offline arbiter'}</span>`.s;
 }
 
 // ---------------------------------------------------------------- router
@@ -112,7 +112,7 @@ async function renderHome() {
     <ol class="flow" aria-label="How Verdict works">
       <li><div class="n">Step 1</div><h3>Agree</h3><p>The brief becomes measurable acceptance criteria. Both sides accept them before any money moves.</p></li>
       <li><div class="n">Step 2</div><h3>Hold</h3><p>The client approves a PayPal authorization. The money is reserved, not captured.</p></li>
-      <li><div class="n">Step 3</div><h3>Rule</h3><p>Code measures what it can. Claude judges the rest and explains every ruling with evidence.</p></li>
+      <li><div class="n">Step 3</div><h3>Rule</h3><p>Code measures what it can. The AI judges the rest and explains every ruling with evidence.</p></li>
       <li><div class="n">Step 4</div><h3>Settle</h3><p>All criteria pass: the hold is captured and the freelancer is paid by PayPal Payouts.</p></li>
     </ol>
     <section>
@@ -166,7 +166,7 @@ function renderNew() {
           <label class="field">Freelancer's PayPal email<input type="email" name="freelancerEmail" required placeholder="arjun@example.com"></label>
         </div>
         ${CONFIG.paypalMode === 'sandbox' ? html`<p class="small muted">Use the email of a PayPal sandbox personal account so the payout lands somewhere you can check.</p>` : ''}
-        <div class="btn-row"><button class="btn" type="button" data-act="compile">Draft criteria${CONFIG.aiProvider === 'anthropic' ? ' with Claude' : ''}</button></div>
+        <div class="btn-row"><button class="btn" type="button" data-act="compile">Draft criteria${CONFIG.aiProvider !== 'heuristic' ? ` with ${CONFIG.aiLabel}` : ''}</button></div>
       </div>
       <div class="panel stack" id="criteria-panel">
         <div><h2>Acceptance criteria</h2><p class="muted small">These decide whether the money is released. Measured criteria are checked by code; AI judgments are ruled on by the arbiter with evidence.</p></div>
@@ -393,7 +393,7 @@ function rulingHTML(v, s) {
   return html`<section class="panel ruling" aria-labelledby="r-${s.id}">
     ${stampSVG(decision, s.n, D.freshStamp.has(s.id), s.id)}
     <div class="ruling-head"><div>
-      <div class="small muted">Attempt ${s.n} · submitted ${when(s.createdAt)} · ${vd.aiProvider === 'anthropic' ? `judged with ${vd.aiModel}` : 'judged offline'}</div>
+      <div class="small muted">Attempt ${s.n} · submitted ${when(s.createdAt)} · ${vd.aiProvider && vd.aiProvider !== 'heuristic' ? `judged with ${vd.aiModel}` : 'judged offline'}</div>
       <h2 id="r-${s.id}" style="margin-top:6px">${head}</h2>
       <p class="small" style="margin-top:6px"><a href="${s.url}" target="_blank" rel="noopener noreferrer">${s.url}</a>${s.repoUrl ? html` · <a href="${s.repoUrl}" target="_blank" rel="noopener noreferrer">repository</a>` : ''}</p>
       ${vd.summary ? html`<p class="summary">${vd.summary}</p>` : ''}

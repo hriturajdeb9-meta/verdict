@@ -8,7 +8,7 @@ Verdict is a conditional-payment app for freelance work. The client's money is *
 
 - Zero dependencies. Node.js 20.12+ only. No `npm install`.
 - Runs fully offline out of the box (simulated PayPal, heuristic arbiter), so anyone can try it in 30 seconds.
-- Add PayPal sandbox keys and an Anthropic key and it runs against the real PayPal sandbox with Claude as the arbiter.
+- Add PayPal sandbox keys and a Gemini (free) or Claude API key and it runs against the real PayPal sandbox with a real AI arbiter.
 
 ---
 
@@ -22,13 +22,13 @@ npm start
 
 Open http://localhost:3000 and click **Try it with a sample brief**. In this mode the top bar shows "PayPal simulated" and "Offline arbiter".
 
-Run the test suite (14 end-to-end and unit tests):
+Run the test suite (16 end-to-end and unit tests):
 
 ```bash
 npm test
 ```
 
-## Run with the real PayPal sandbox and Claude
+## Run with the real PayPal sandbox and a real AI arbiter
 
 1. Copy the env file: `cp .env.example .env`
 2. **PayPal sandbox app**
@@ -36,13 +36,15 @@ npm test
    - Copy the **Client ID** and **Secret** into `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET`.
    - In the app's **Features** settings, make sure **Payouts** is enabled (it pays the freelancer).
    - Under **Testing Tools → Sandbox Accounts** you'll find a sandbox **Personal** account (the client/buyer who approves the hold) and a **Business** account (the platform that captures and pays out). Create a second Personal account to act as the freelancer and note its email.
-3. **Claude**: put your key from https://console.anthropic.com in `ANTHROPIC_API_KEY`. The default model is `claude-sonnet-5-5` (override with `ANTHROPIC_MODEL`).
+3. **AI arbiter** (pick one):
+   - **Gemini (free tier):** get a key at https://aistudio.google.com → Get API key and put it in `GEMINI_API_KEY`. Default model `gemini-3.8-flash`, falling back to older Flash models automatically (override with `GEMINI_MODEL`).
+   - **Claude:** put a key from https://console.anthropic.com in `ANTHROPIC_API_KEY` (default model `claude-sonnet-5-5`, override with `ANTHROPIC_MODEL`).
 4. Verify every PayPal call with one command (it prints a link for you to approve the hold as the sandbox buyer):
    ```bash
    npm run sandbox-check -- --payout-email <freelancer sandbox email>
    npm run sandbox-check -- --void          # tests the cancel path
    ```
-5. `npm start`. The top bar now shows "PayPal sandbox" and "Claude arbiter".
+5. `npm start`. The top bar now shows "PayPal sandbox" and "Gemini arbiter" (or "Claude arbiter").
 
 When funding a deal, the PayPal button opens the real sandbox checkout. Sign in with the sandbox Personal (buyer) account. After the release, check the freelancer's sandbox account in https://sandbox.paypal.com to see the payout arrive.
 
@@ -61,7 +63,7 @@ When funding a deal, the PayPal button opens the real sandbox checkout. Sign in 
 sequenceDiagram
     participant C as Client
     participant V as Verdict
-    participant AI as Claude (arbiter)
+    participant AI as AI arbiter (Gemini / Claude)
     participant P as PayPal
     participant F as Freelancer
     C->>V: Brief + amount
@@ -105,17 +107,17 @@ Every state-changing call sends a `PayPal-Request-Id`, so a retried capture or p
 
 ### AI integration
 
-Claude is used for two jobs, both with forced tool use so the output is structured JSON rather than free text:
+Verdict works with **Google Gemini** (`generateContent` with forced function calling) or **Anthropic Claude** (Messages API with forced tool use). The model is used for two jobs, and both return structured JSON rather than free text:
 
 1. **Criteria compiler.** Turns a plain-English brief into acceptance criteria. It prefers criteria code can verify (load time, visible text, required elements, API responses, repo files) and uses AI judgment only for genuinely subjective requirements such as tone or copy quality.
 2. **Arbiter.** Rules on the subjective criteria using evidence collected from the deliverable (visible text, headings, forms, images, repo files), and writes the summary and fix notes.
 
-**Design principle: the AI never decides what code can measure.** "Has an email signup form" is checked by a CSS selector, not by asking a model. Measured results are passed to Claude as facts it must not contradict.
+**Design principle: the AI never decides what code can measure.** "Has an email signup form" is checked by a CSS selector, not by asking a model. Measured results are passed to the model as facts it must not contradict.
 
 ### Safety rails around money
 
 - **Prompt-injection guard.** Deliverables are untrusted input. Verdict scans visible text, hidden text (`display:none`, `font-size:0`, off-screen), HTML comments and repo files for instructions aimed at the reviewer. Any hit blocks auto-release and goes to a human.
-- **Fail closed.** If Claude is unavailable, or skips a criterion, that criterion fails. Subjective work is never auto-released without an actual AI ruling.
+- **Fail closed.** If the AI is unavailable, or skips a criterion, that criterion fails. Subjective work is never auto-released without an actual AI ruling.
 - **Both sides agree first.** Criteria are locked when the freelancer accepts, before any money is held.
 - **Bounded attempts.** Three review attempts by default, then a human decides.
 - **Disputes.** The freelancer can contest a verdict; the client can release, allow another attempt, or void the hold.
@@ -130,7 +132,7 @@ src/
   deals.js       Deal state machine, review pipeline, settlement
   paypal.js      PayPal REST client: orders, authorize, capture, void, payouts
   paypal-sim.js  Built-in PayPal simulator used when no keys are set
-  ai.js          Claude criteria compiler and arbiter, plus offline heuristics
+  ai.js          Criteria compiler and arbiter (Gemini or Claude), plus offline heuristics
   checks.js      Measured checks (load time, text, elements, JSON APIs, repo files)
   evidence.js    Safe fetching, page snapshots, GitHub repo evidence
   html.js        Dependency-free HTML parser and CSS selector engine
@@ -147,8 +149,10 @@ docs/            Devpost write-up, video script, submission checklist
 |---|---|---|
 | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | empty | PayPal sandbox app credentials. Empty means simulated PayPal. |
 | `PAYPAL_API_BASE` | `https://api-m.sandbox.paypal.com` | PayPal REST base URL |
-| `ANTHROPIC_API_KEY` | empty | Claude API key. Empty means offline heuristic arbiter. |
-| `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Model for the compiler and arbiter |
+| `GEMINI_API_KEY` | empty | Google Gemini API key (free tier available) |
+| `GEMINI_MODEL` | `gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash-lite,gemini-2.5-flash` | Models to try, in order |
+| `ANTHROPIC_API_KEY` | empty | Claude API key (used instead of Gemini when set). With no AI key, the offline heuristic arbiter runs. |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Claude model |
 | `PLATFORM_FEE_PERCENT` | `0` | Fee kept from each payout (0 to 20) |
 | `MAX_REVIEW_ATTEMPTS` | `3` | Reviews before a human must decide |
 | `ALLOW_PRIVATE_URLS` | `true` locally, `false` in production | Allow reviewing localhost URLs |
@@ -158,7 +162,7 @@ docs/            Devpost write-up, video script, submission checklist
 
 ## Deploy (Render)
 
-The repo includes `render.yaml`. In Render choose **New → Blueprint**, point it at your fork, and set `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` and `ANTHROPIC_API_KEY` in the dashboard. Data is stored in a JSON file; on Render's free tier it resets on redeploy, which is fine for a demo.
+The repo includes `render.yaml`. In Render choose **New → Blueprint**, point it at your fork, and set `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` and `GEMINI_API_KEY` in the dashboard. Data is stored in a JSON file; on Render's free tier it resets on redeploy, which is fine for a demo.
 
 ## Limitations and what's next
 

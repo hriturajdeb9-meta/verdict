@@ -6,8 +6,8 @@ import { KINDS, sanitizeCriterion } from './checks.js';
  *   2. judge: rule on the criteria code cannot measure, then explain the verdict and
  *      write fix notes. Code-measured results are passed in as facts and never re-decided.
  *
- * Uses Claude through the Messages API with forced tool use for structured output.
- * With no ANTHROPIC_API_KEY, deterministic heuristics stand in so the app still runs.
+ * Uses Claude (Messages API, forced tool use) or Google Gemini (generateContent, forced
+ * function calling) for structured output. With no key, deterministic heuristics stand in.
  */
 
 const SELECTOR_HELP =
@@ -127,12 +127,74 @@ export function createAI(aiConfig) {
     throw lastErr;
   }
 
+  // Gemini function declarations accept an OpenAPI subset; drop keywords it may reject.
+  const toGeminiSchema = (schema) => {
+    if (Array.isArray(schema)) return schema.map(toGeminiSchema);
+    if (!schema || typeof schema !== 'object') return schema;
+    const out = {};
+    for (const [k, v] of Object.entries(schema)) {
+      if (k === 'minItems' || k === 'maxItems' || k === 'additionalProperties') continue;
+      out[k] = k === 'properties' ? Object.fromEntries(Object.entries(v).map(([pk, pv]) => [pk, toGeminiSchema(pv)])) : toGeminiSchema(v);
+    }
+    return out;
+  };
+
+  let geminiModel = null; // the first model in the list that the API accepts
+  async function callGemini({ system, content, tool, maxTokens = 3000 }) {
+    const models = geminiModel ? [geminiModel] : aiConfig.geminiModels;
+    let lastErr;
+    for (const model of models) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await fetch(`${aiConfig.geminiApiBase}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+            method: 'POST',
+            headers: { 'x-goog-api-key': aiConfig.geminiKey, 'content-type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: system }] },
+              contents: [{ role: 'user', parts: [{ text: content }] }],
+              tools: [{ functionDeclarations: [{ name: tool.name, description: tool.description, parameters: toGeminiSchema(tool.input_schema) }] }],
+              toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: [tool.name] } },
+              generationConfig: { temperature: 0.2, maxOutputTokens: Math.max(maxTokens, 4096) },
+            }),
+            signal: AbortSignal.timeout(aiConfig.timeoutMs),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.status === 404) {
+            lastErr = new Error(`Gemini model ${model} is not available`);
+            break; // try the next model
+          }
+          if (res.status === 429 || res.status >= 500) {
+            lastErr = new Error(data?.error?.message || `Gemini API ${res.status}`);
+            await new Promise((r) => setTimeout(r, 2500 * (attempt + 1)));
+            continue;
+          }
+          if (!res.ok) throw new Error(data?.error?.message || `Gemini API ${res.status}`);
+          const call = (data.candidates?.[0]?.content?.parts || []).find((p) => p.functionCall)?.functionCall;
+          if (!call?.args) throw new Error('Gemini did not return structured output.');
+          geminiModel = model;
+          activeModel = model;
+          return call.args;
+        } catch (err) {
+          lastErr = err;
+          if (err.name === 'TimeoutError') break;
+        }
+      }
+    }
+    throw lastErr;
+  }
+
+  let activeModel = provider === 'anthropic' ? aiConfig.model : provider === 'gemini' ? aiConfig.geminiModels[0] : 'offline-heuristics';
+  const callModel = (args) => (provider === 'gemini' ? callGemini(args) : callClaude(args));
+
   return {
     provider,
-    model: provider === 'anthropic' ? aiConfig.model : 'offline-heuristics',
+    label: { anthropic: 'Claude', gemini: 'Gemini', heuristic: 'Offline' }[provider],
+    get model() {
+      return activeModel;
+    },
 
     async compileCriteria({ title, description }) {
-      if (provider !== 'anthropic') return { criteria: heuristicCompile(description), source: 'heuristic' };
+      if (provider === 'heuristic') return { criteria: heuristicCompile(description), source: 'heuristic' };
       const system = [
         'You turn a freelance job brief into acceptance criteria that decide whether payment is released.',
         'Prefer criteria a program can verify (page_loads, contains_text, has_element, http_json, repo_file).',
@@ -141,18 +203,18 @@ export function createAI(aiConfig) {
         SELECTOR_HELP,
         'For has_element prefer robust selectors, e.g. form input[type=email] rather than deep class chains.',
       ].join('\n');
-      const input = await callClaude({
+      const input = await callModel({
         system,
         tool: COMPILE_TOOL,
         content: `Job title: ${title || '(untitled)'}\n\nBrief:\n<brief>\n${description}\n</brief>`,
       });
       const criteria = (input.criteria || []).slice(0, 12).map(sanitizeCriterion);
       if (!criteria.length) throw new Error('No criteria could be drafted from this brief.');
-      return { criteria, source: 'anthropic' };
+      return { criteria, source: provider };
     },
 
     async judge({ deal, aiCriteria, automated, page, repo, injection }) {
-      if (provider !== 'anthropic') return heuristicJudge({ aiCriteria, automated, page });
+      if (provider === 'heuristic') return heuristicJudge({ aiCriteria, automated, page });
       const system = [
         'You are the arbiter in a conditional payment. The client\'s money is on hold and is released only if the deliverable meets the agreed criteria.',
         'Rule ONLY on the criteria listed under <rule_on>. Results under <measured> were decided by code; treat them as facts and never contradict them.',
@@ -183,7 +245,7 @@ export function createAI(aiConfig) {
       }
       lines.push('</deliverable>');
 
-      const input = await callClaude({ system, tool: JUDGE_TOOL, content: lines.join('\n\n'), maxTokens: 4000 });
+      const input = await callModel({ system, tool: JUDGE_TOOL, content: lines.join('\n\n'), maxTokens: 4000 });
       const ids = new Set(aiCriteria.map((c) => c.id));
       const judgments = (input.judgments || [])
         .filter((j) => ids.has(j.criterion_id))

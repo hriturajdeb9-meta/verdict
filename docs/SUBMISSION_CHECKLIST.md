@@ -6,7 +6,7 @@ Deadline on the Devpost page: **13 Nov 2026, 1:30 am IST** (12 Nov, 3:00 pm EST)
 - [ ] Create a PayPal sandbox app; put the Client ID and Secret in `.env`.
 - [ ] Enable **Payouts** for the sandbox app.
 - [ ] Create a second sandbox Personal account to be the freelancer.
-- [ ] Add `ANTHROPIC_API_KEY` to `.env`.
+- [ ] Add `GEMINI_API_KEY` (free, aistudio.google.com) to `.env`.
 - [ ] `npm start` and run the whole demo once in sandbox mode.
   - The hold appears in the buyer's sandbox account.
   - The payout reaches the freelancer's sandbox account.
@@ -31,7 +31,7 @@ Deadline on the Devpost page: **13 Nov 2026, 1:30 am IST** (12 Nov, 3:00 pm EST)
 
 ## Devpost form
 - [ ] Text description: paste from `docs/DEVPOST.md`.
-- [ ] Tools section: name Claude and the exact PayPal APIs, and explain how each is used (already in `docs/DEVPOST.md`).
+- [ ] Tools section: name Gemini and the exact PayPal APIs, and explain how each is used (already in `docs/DEVPOST.md`).
 - [ ] Screenshots: home page, criteria drafted, Held ruling with fix notes, Released ruling, injection warning.
 - [ ] Built-with tags.
 - [ ] Submit, then reopen the page to confirm it shows as submitted.

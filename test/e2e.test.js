@@ -270,3 +270,59 @@ describe('HTML inspection', () => {
     assert.ok(!scanForInjection([{ where: 'x', text: 'Our sourdough is approved by the local baking guild.' }]).flagged);
   });
 });
+
+describe('Gemini arbiter (fake generateContent API)', () => {
+  let fake;
+  let h;
+  const seen = [];
+
+  before(async () => {
+    fake = createServer(async (req, res) => {
+      let body = '';
+      for await (const c of req) body += c;
+      const msg = JSON.parse(body);
+      const model = decodeURIComponent(req.url.match(/models\/([^:]+):generateContent/)[1]);
+      seen.push({ model, key: req.headers['x-goog-api-key'], msg });
+      if (model === 'gone-model') {
+        res.writeHead(404, { 'content-type': 'application/json' });
+        return res.end(JSON.stringify({ error: { code: 404, message: 'models/gone-model is not found' } }));
+      }
+      const name = msg.toolConfig.functionCallingConfig.allowedFunctionNames[0];
+      let args;
+      if (name === 'define_acceptance_criteria') {
+        args = { criteria: [{ title: 'Signup form', kind: 'has_element', params: { selector: 'form input[type=email]' } }, { title: 'Warm tone', kind: 'ai_review', params: { question: 'Is the copy warm?' } }] };
+      } else {
+        const ids = [...msg.contents[0].parts[0].text.matchAll(/^(C\d+): /gm)].map((m) => m[1]);
+        args = { judgments: ids.map((id) => ({ criterion_id: id, passed: true, confidence: 0.8, reasoning: 'Warm and friendly.' })), summary: 'Gemini summary.', fix_notes: [] };
+      }
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ functionCall: { name, args } }] } }] }));
+    });
+    await new Promise((r) => fake.listen(0, '127.0.0.1', r));
+    h = await boot({ GEMINI_API_KEY: 'g-test', GEMINI_API_BASE: `http://127.0.0.1:${fake.address().port}`, GEMINI_MODEL: 'gone-model,good-model' });
+  });
+  after(async () => {
+    await h.app.close();
+    await new Promise((r) => fake.close(r));
+  });
+
+  test('falls back past an unavailable model and returns structured criteria', async () => {
+    const cfg = await h.ok('GET', '/api/config');
+    assert.equal(cfg.aiProvider, 'gemini');
+    const { criteria, source } = await h.ok('POST', '/api/criteria/compile', { description: 'A bakery landing page with an email signup form and warm copy.' });
+    assert.equal(source, 'gemini');
+    assert.deepEqual(criteria.map((c) => c.kind), ['has_element', 'ai_review']);
+    assert.deepEqual(seen.map((s) => s.model).slice(0, 2), ['gone-model', 'good-model']);
+    assert.equal(seen[1].key, 'g-test');
+    assert.equal(seen[1].msg.toolConfig.functionCallingConfig.mode, 'ANY');
+    assert.equal(JSON.stringify(seen[1].msg.tools).includes('maxItems'), false, 'unsupported schema keywords are stripped');
+  });
+
+  test('a full deal is judged by Gemini and released', async () => {
+    const deal = await fundedDeal(h);
+    const v = await submitAndWait(h, deal, 'v2');
+    assert.equal(v.status, 'released');
+    assert.equal(v.submissions[0].verdict.summary, 'Gemini summary.');
+    assert.equal(v.submissions[0].verdict.aiModel, 'good-model');
+  });
+});

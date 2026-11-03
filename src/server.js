@@ -51,6 +51,7 @@ export function createApp(overrides = {}) {
     currency: config.paypal.currency,
     aiProvider: ai.provider,
     aiModel: ai.model,
+    aiLabel: ai.label,
     platformFeePercent: config.platformFeePercent,
     maxAttempts: config.maxAttempts,
     demoBrief: DEMO_BRIEF,
@@ -209,5 +210,5 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const c = app.config;
   console.log(`\n  Verdict is running at http://localhost:${port}`);
   console.log(`  PayPal: ${c.paypal.mode === 'sandbox' ? 'sandbox (real PayPal API)' : 'simulated (set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET for the real sandbox)'}`);
-  console.log(`  AI:     ${c.ai.provider === 'anthropic' ? `Claude (${c.ai.model})` : 'offline heuristics (set ANTHROPIC_API_KEY to use Claude)'}\n`);
+  console.log(`  AI:     ${c.ai.provider === 'anthropic' ? `Claude (${c.ai.model})` : c.ai.provider === 'gemini' ? `Gemini (${c.ai.geminiModels[0]})` : 'offline heuristics (set GEMINI_API_KEY or ANTHROPIC_API_KEY)'}\n`);
 }

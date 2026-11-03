@@ -124,7 +124,7 @@ export function createDealService({ store, paypal, ai, config }) {
       client: { name: String(input.clientName || 'Client').slice(0, 80) },
       freelancer: { name: String(input.freelancerName || 'Freelancer').slice(0, 80), paypalEmail: freelancerEmail },
       criteria,
-      criteriaSource: input.criteriaSource === 'anthropic' ? 'anthropic' : input.criteriaSource === 'heuristic' ? 'heuristic' : 'edited',
+      criteriaSource: ['anthropic', 'gemini', 'heuristic'].includes(input.criteriaSource) ? input.criteriaSource : 'edited',
       status: 'awaiting_agreement',
       tokens: { client: token(), freelancer: token() },
       paypal: { mode: config.paypal.mode },
@@ -204,6 +204,7 @@ export function createDealService({ store, paypal, ai, config }) {
         startedAt: now(),
         aiProvider: ai.provider,
         aiModel: ai.model,
+        aiLabel: ai.label,
         checks: deal.criteria.map((c) => ({
           criterionId: c.id,
           title: c.title,

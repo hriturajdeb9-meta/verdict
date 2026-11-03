@@ -216,13 +216,14 @@ export function createAI(aiConfig) {
         'Every criterion must be traceable to the brief. Do not invent extra requirements. Keep titles short and neutral so both client and freelancer can agree.',
         SELECTOR_HELP,
         'For has_element prefer robust selectors, e.g. form input[type=email] rather than deep class chains.',
+        'Never guess class names, ids or data attributes: the freelancer has not built the page yet. Only use a class or id if the brief itself names it. To count things like menu items or testimonials, use ai_review instead.',
       ].join('\n');
       const input = await callModel({
         system,
         tool: COMPILE_TOOL,
         content: `Job title: ${title || '(untitled)'}\n\nBrief:\n<brief>\n${description}\n</brief>`,
       });
-      const criteria = (input.criteria || []).slice(0, 12).map(sanitizeCriterion);
+      const criteria = (input.criteria || []).slice(0, 12).map(sanitizeCriterion).map((c) => guardSelector(c, `${title || ''}\n${description}`));
       if (!criteria.length) throw new Error('No criteria could be drafted from this brief.');
       return { criteria, source: provider };
     },
@@ -281,6 +282,18 @@ export function createAI(aiConfig) {
       };
     },
   };
+}
+
+/**
+ * A selector that names classes or ids the brief never mentioned is a guess about markup
+ * that doesn't exist yet, and would fail correct work. Turn it into an AI judgment instead.
+ */
+export function guardSelector(c, brief) {
+  if (c.kind !== 'has_element') return c;
+  const named = [...c.params.selector.matchAll(/[.#]([A-Za-z_][\w-]*)|\[\s*(data-[\w-]+)/g)].map((m) => (m[1] || m[2]).toLowerCase());
+  const text = brief.toLowerCase();
+  if (named.every((n) => text.includes(n))) return c;
+  return { ...c, kind: 'ai_review', params: { path: c.params.path, question: `Does the deliverable satisfy this requirement: ${c.title}?` } };
 }
 
 function escapeAttr(s) {

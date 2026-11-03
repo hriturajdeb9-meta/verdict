@@ -344,3 +344,16 @@ describe('Gemini arbiter (fake generateContent API)', () => {
     assert.equal(v.submissions[0].verdict.aiModel, 'good-model');
   });
 });
+
+describe('criteria guard', () => {
+  test('guessed class names become AI judgments; selectors from the brief stay measured', async () => {
+    const { guardSelector } = await import('../src/ai.js');
+    const brief = 'Landing page with an email signup form and a section with class hero-banner';
+    const guessed = guardSelector({ id: 'C1', title: 'Lists 3 menu items', kind: 'has_element', params: { path: '/', selector: '.menu-item, [data-menu-item]', min_count: 3 } }, brief);
+    assert.equal(guessed.kind, 'ai_review');
+    const generic = guardSelector({ id: 'C2', title: 'Signup', kind: 'has_element', params: { path: '/', selector: 'form input[type=email]', min_count: 1 } }, brief);
+    assert.equal(generic.kind, 'has_element');
+    const named = guardSelector({ id: 'C3', title: 'Hero', kind: 'has_element', params: { path: '/', selector: 'section.hero-banner', min_count: 1 } }, brief);
+    assert.equal(named.kind, 'has_element');
+  });
+});

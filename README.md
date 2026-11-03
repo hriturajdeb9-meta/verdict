@@ -14,6 +14,7 @@ Verdict is a conditional-payment app for freelance work. The client's money is *
 
 ## For judges: test it in 2 minutes
 
+- **Demo video:** https://youtu.be/9j7NlBSu078
 - **Hosted demo:** https://verdict-jpko.onrender.com. It runs on the real PayPal sandbox with Gemini. It's on Render's free tier, so the first load after a quiet period can take up to a minute.
 - **PayPal sandbox buyer** (approves the hold): the email and password are in the Devpost testing instructions. It's a sandbox test account with no real money.
 - **Steps:**

@@ -84,6 +84,7 @@ PayPal's authorize-and-capture flow is an underused superpower. It turns "pay no
 
 ## How judges can test it
 
+- **Demo video:** https://youtu.be/9j7NlBSu078
 - **Hosted demo:** https://verdict-jpko.onrender.com (free hosting: the first load after a quiet period can take up to a minute)
 - **Repository:** https://github.com/hriturajdeb9-meta/verdict (see README → Quick start; `npm start`, no install needed)
 - **PayPal sandbox buyer account to approve the hold:** sb-xu5bt53702379@personal.example.com / [PASTE SANDBOX BUYER PASSWORD HERE]. It's a sandbox test account with no real money.

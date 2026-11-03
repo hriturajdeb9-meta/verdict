@@ -69,7 +69,8 @@ async function busy(btn, fn) {
 // ---------------------------------------------------------------- config
 let CONFIG = null;
 async function loadConfig() {
-  CONFIG = await api('GET', '/api/config');
+  // The server inlines the config into index.html, so the first paint needs no extra request.
+  CONFIG = window.__VERDICT_CONFIG__ || (await api('GET', '/api/config'));
   const pp = CONFIG.paypalMode === 'sandbox';
   const ai = CONFIG.aiProvider !== 'heuristic';
   $('#modes').innerHTML = html`
@@ -79,11 +80,14 @@ async function loadConfig() {
 
 // ---------------------------------------------------------------- router
 let stopPolling = () => {};
+let stopHero = () => {};
 async function route() {
   stopPolling();
+  stopHero();
   const [path, query] = location.hash.replace(/^#/, '').split('?');
   const params = new URLSearchParams(query || '');
   const parts = (path || '/').split('/').filter(Boolean);
+  document.body.dataset.page = parts[0] || 'home';
   window.scrollTo(0, 0);
   if (parts[0] === 'new') return renderNew();
   if (parts[0] === 'deal' && parts[1]) {
@@ -98,39 +102,213 @@ async function route() {
 }
 
 // ---------------------------------------------------------------- home
+const HERO_CLAUSES = [
+  ['The page loads in under 2 seconds', 'Measured'],
+  ['Visitors can join with an email signup form', 'Measured'],
+  ['/api/menu returns the menu as JSON', 'Measured'],
+  ['The copy feels warm and friendly', 'AI judgment'],
+];
+
+function heroContract() {
+  return html`
+    <figure class="contract" id="hero-contract" aria-label="Example: a $250 deal held in PayPal, reviewed by Verdict, then released">
+      <div class="hc-head">
+        <div><div class="hc-title">Landing page for Bloom Bakery</div><div class="hc-sub">Maya hires Arjun</div></div>
+        <div class="hc-amount"><div class="hc-fig">$250.00</div><div class="hc-where" id="hc-where">Waiting for the hold</div></div>
+      </div>
+      <div class="hc-attempt" id="hc-attempt">The contract</div>
+      <ol class="hc-clauses">${HERO_CLAUSES.map(([t, k], i) => html`
+        <li data-i="${i}"><span class="hc-ico" aria-hidden="true"></span><span class="hc-text">${t}</span><span class="hc-kind ${k === 'AI judgment' ? 'ai' : ''}">${k}</span></li>`)}
+      </ol>
+      <div class="hc-rail" aria-hidden="true">
+        <span class="hc-node">Maya</span>
+        <span class="hc-track"><span class="hc-mid">PayPal hold</span><span class="hc-coin" id="hc-coin">$</span></span>
+        <span class="hc-node">Arjun</span>
+      </div>
+      <p class="hc-status" id="hc-status" aria-live="off">Both sides agree on what “done” means.</p>
+      <div class="hc-stamp" id="hc-stamp"></div>
+    </figure>`;
+}
+
+/** Plays the product story on the hero contract: hold, held with fixes, released and paid. */
+function playHero() {
+  const root = $('#hero-contract');
+  if (!root) return () => {};
+  const items = [...root.querySelectorAll('.hc-clauses li')];
+  const $s = (id) => root.querySelector(id);
+  const set = (i, state) => (items[i].className = state);
+  const coin = (pos) => ($s('#hc-coin').dataset.pos = pos);
+  const status = (t) => ($s('#hc-status').textContent = t);
+  const where = (t, tone) => {
+    const w = $s('#hc-where');
+    w.textContent = t;
+    w.dataset.tone = tone || '';
+  };
+  const stamp = (decision, n) => ($s('#hc-stamp').innerHTML = decision ? stampSVG(decision, n, true, `hero${n}${decision}`).s : '');
+
+  const finalState = () => {
+    items.forEach((_, i) => set(i, 'passed'));
+    $s('#hc-attempt').textContent = 'Attempt 2';
+    coin('end');
+    where('Paid to Arjun', 'pass');
+    status('Every criterion passed. Captured and paid out with PayPal Payouts.');
+    stamp('release', 2);
+  };
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    finalState();
+    return () => {};
+  }
+
+  let timers = [];
+  const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const run = () => {
+    timers = [];
+    let t = 0;
+    const step = (ms, fn) => at((t += ms), fn);
+    step(0, () => {
+      items.forEach((_, i) => set(i, ''));
+      stamp(null);
+      coin('start');
+      where('Waiting for the hold');
+      $s('#hc-attempt').textContent = 'The contract';
+      status('Both sides agree on what “done” means.');
+    });
+    step(1600, () => {
+      coin('mid');
+      where('On hold in PayPal', 'hold');
+      status('Maya approves a PayPal hold. Nothing is charged yet.');
+    });
+    step(1700, () => {
+      $s('#hc-attempt').textContent = 'Attempt 1';
+      status('Arjun delivers. Verdict checks every clause.');
+    });
+    const first = ['passed', 'failed', 'failed', 'passed'];
+    first.forEach((r, i) => {
+      step(i === 0 ? 500 : 650, () => set(i, 'running'));
+      step(450, () => set(i, r));
+    });
+    step(450, () => {
+      stamp('changes_requested', 1);
+      status('Held. Arjun gets two exact fix notes. The money stays put.');
+    });
+    step(2600, () => {
+      stamp(null);
+      items.forEach((_, i) => set(i, ''));
+      $s('#hc-attempt').textContent = 'Attempt 2';
+      status('Arjun fixes the site and resubmits.');
+    });
+    [0, 1, 2, 3].forEach((i) => {
+      step(i === 0 ? 700 : 450, () => set(i, 'running'));
+      step(350, () => set(i, 'passed'));
+    });
+    step(450, () => {
+      stamp('release', 2);
+      status('Every criterion passed. Verdict releases the money.');
+    });
+    step(1100, () => {
+      coin('end');
+      where('Paid to Arjun', 'pass');
+      status('Captured and paid out with PayPal Payouts. No invoice, no chasing.');
+    });
+    step(4200, run);
+  };
+  // Start only once the hero is on screen, and pause when the tab is hidden.
+  let started = false;
+  const io = new IntersectionObserver(([e]) => {
+    if (e.isIntersecting && !started) {
+      started = true;
+      run();
+    }
+  });
+  io.observe(root);
+  return () => {
+    io.disconnect();
+    timers.forEach(clearTimeout);
+  };
+}
+
 async function renderHome() {
   document.title = 'Verdict · Payment that releases when the work is done';
+  const repo = 'https://github.com/hriturajdeb9-meta/verdict';
   main.innerHTML = html`
-    <section class="hero">
-      <h1>Payment that releases itself when the work meets the brief.</h1>
-      <p class="lede">The client's money is held in PayPal, not charged. When the freelancer delivers, an AI arbiter checks the work against criteria both sides agreed to. Everything passes, the money moves. Something's missing, the freelancer gets exact fix notes.</p>
-      <div class="btn-row">
-        <a class="btn primary" href="#/new">Start a deal</a>
-        <a class="btn" href="#/new?demo=1">Try it with a sample brief</a>
+    <section class="band">
+      <div class="hero2">
+        <div class="hero-copy">
+          <h1>Payment that releases itself when the work meets the brief.</h1>
+          <p class="hero-lede">The client’s money is held in PayPal, not charged. When the freelancer delivers, an AI arbiter checks the work against criteria both sides agreed to. Everything passes, the money moves. Something’s missing, the freelancer gets exact fix notes.</p>
+          <div class="btn-row">
+            <a class="btn primary big" href="#/new?demo=1">Try the live demo</a>
+            <a class="btn ghost big" href="#/new">Start a deal</a>
+          </div>
+          <p class="hero-proof">Runs on PayPal Orders, authorization capture and Payouts. Ruled by ${CONFIG.aiProvider === 'heuristic' ? 'Gemini or Claude' : CONFIG.aiLabel}.</p>
+        </div>
+        ${heroContract()}
       </div>
     </section>
-    <ol class="flow" aria-label="How Verdict works">
-      <li><div class="n">Step 1</div><h3>Agree</h3><p>The brief becomes measurable acceptance criteria. Both sides accept them before any money moves.</p></li>
-      <li><div class="n">Step 2</div><h3>Hold</h3><p>The client approves a PayPal authorization. The money is reserved, not captured.</p></li>
-      <li><div class="n">Step 3</div><h3>Rule</h3><p>Code measures what it can. The AI judges the rest and explains every ruling with evidence.</p></li>
-      <li><div class="n">Step 4</div><h3>Settle</h3><p>All criteria pass: the hold is captured and the freelancer is paid by PayPal Payouts.</p></li>
-    </ol>
-    <section>
+
+    <section class="home-deals" id="home-deals" hidden>
       <div class="section-head"><h2>Your deals</h2><a class="btn quiet" href="#/new">New deal</a></div>
-      <div class="deal-list" id="deal-list"><div class="empty">Loading…</div></div>
-    </section>`.s;
+      <div class="deal-list" id="deal-list"></div>
+    </section>
+
+    <section class="why">
+      <h2 class="why-h">Escrow holds the money. Nobody decides when the work is done.</h2>
+      <div class="why-cols">
+        <p><b>Freelancers</b> deliver, then chase invoices for weeks, or argue about whether “done” was done.</p>
+        <p><b>Clients</b> pay up front and hope, or hold back payment and lose good people.</p>
+        <p><b>Verdict</b> defines “done” before work starts, checks it the moment it arrives, and moves the money itself.</p>
+      </div>
+    </section>
+
+    <section class="how">
+      <h2>How it works</h2>
+      <ol class="flow" aria-label="How Verdict works">
+        <li><div class="n">1</div><h3>Agree</h3><p>The brief becomes measurable acceptance criteria. Both sides accept them before any money moves.</p></li>
+        <li><div class="n">2</div><h3>Hold</h3><p>The client approves a PayPal authorization. The money is reserved, not captured.</p></li>
+        <li><div class="n">3</div><h3>Rule</h3><p>Code measures what it can. The AI judges the rest and explains every ruling with evidence.</p></li>
+        <li><div class="n">4</div><h3>Settle</h3><p>All criteria pass: the hold is captured and the freelancer is paid with PayPal Payouts.</p></li>
+      </ol>
+    </section>
+
+    <section class="guards">
+      <h2>Money can’t be talked out of the hold</h2>
+      <dl class="ledger-list">
+        <div><dt>Code measures, AI judges</dt><dd>Load time, forms and APIs are checked by code. The AI only rules on what code can’t measure, and can’t overrule a measurement.</dd></div>
+        <div><dt>Prompt-injection guard</dt><dd>Text hidden in a deliverable that targets the reviewer is caught, and the money is never released automatically.</dd></div>
+        <div><dt>Fails closed</dt><dd>If the AI is down, skips a criterion or PayPal errors, the money stays on hold. Every PayPal call is idempotent.</dd></div>
+        <div><dt>A human always has the last word</dt><dd>The freelancer can dispute a verdict; the client can release, ask for another attempt, or void the hold.</dd></div>
+      </dl>
+    </section>
+
+    <section class="under">
+      <h2>Under the hood</h2>
+      <table class="api-table">
+        <tr><th>PayPal Orders v2, intent AUTHORIZE</th><td>Holds the client’s money without charging it</td></tr>
+        <tr><th>Payments v2 capture and void</th><td>Releases the hold when the work passes, or cancels it</td></tr>
+        <tr><th>Payouts v1</th><td>Pays the freelancer’s PayPal account</td></tr>
+        <tr><th>${CONFIG.aiProvider === 'anthropic' ? 'Claude, structured tool use' : 'Gemini, function calling'}</th><td>Drafts the criteria and rules on the subjective ones</td></tr>
+      </table>
+    </section>
+
+    <footer class="site-foot">
+      <span>Verdict is open source under the MIT license.</span>
+      <a href="${repo}" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+    </footer>`.s;
+
+  stopHero = playHero();
 
   const all = Tokens.all();
   const toks = Object.values(all).flatMap((t) => [t.client, t.freelancer, t.unknown]).filter(Boolean);
   const list = toks.length ? await api('GET', `/api/deals?tokens=${encodeURIComponent(toks.join(','))}`).catch(() => []) : [];
-  $('#deal-list').innerHTML = list.length
-    ? html`${list.map((d) => html`
-        <a class="deal-row" href="#/deal/${d.id}">
-          <div><div style="font-weight:600">${d.title}</div><div class="small muted">You are the ${d.role} · created ${when(d.createdAt)}</div></div>
-          <div style="font-weight:700">${money(d.amount)}</div>
-          <span class="status ${statusTone(d.status)}">${d.statusLabel}</span>
-        </a>`)}`.s
-    : html`<div class="empty">No deals in this browser yet. Start one, or open an invite link a client sent you.</div>`.s;
+  const box = $('#home-deals');
+  if (!box || !list.length) return;
+  box.hidden = false;
+  $('#deal-list').innerHTML = html`${list.map((d) => html`
+      <a class="deal-row" href="#/deal/${d.id}">
+        <div><div style="font-weight:600">${d.title}</div><div class="small muted">You are the ${d.role}, created ${when(d.createdAt)}</div></div>
+        <div style="font-weight:700">${money(d.amount)}</div>
+        <span class="status ${statusTone(d.status)}">${d.statusLabel}</span>
+      </a>`)}`.s;
 }
 
 function statusTone(s) {

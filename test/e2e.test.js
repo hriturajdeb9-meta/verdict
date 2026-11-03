@@ -366,3 +366,24 @@ describe('criteria guard', () => {
     assert.equal(named.kind, 'has_element');
   });
 });
+
+describe('static delivery', () => {
+  let h;
+  before(async () => (h = await boot()));
+  after(() => h.app.close());
+
+  test('index is compressed, has the config inlined and hashed asset URLs', async () => {
+    const res = await fetch(h.base + '/', { headers: { 'accept-encoding': 'br' } });
+    assert.equal(res.status, 200);
+    const html = await res.text();
+    assert.match(html, /window\.__VERDICT_CONFIG__=\{/);
+    const css = html.match(/href="(\/styles\.css\?v=[\w-]+)"/)[1];
+    const asset = await fetch(h.base + css);
+    assert.equal(asset.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+    const again = await fetch(h.base + css, { headers: { 'if-none-match': asset.headers.get('etag') } });
+    assert.equal(again.status, 304);
+    const deep = await fetch(h.base + '/deal/abc');
+    assert.equal(deep.status, 200, 'unknown paths without an extension fall back to the app');
+    assert.equal((await fetch(h.base + '/nope.js')).status, 404);
+  });
+});

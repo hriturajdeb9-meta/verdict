@@ -5,20 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Verdict · Payment that releases when the work is done</title>
   <meta name="description" content="Conditional payments for freelance work. The client's money is held in PayPal; an AI arbiter checks the delivered work against agreed criteria and releases it automatically.">
+  <meta name="theme-color" content="#0d1630">
+  <meta property="og:title" content="Verdict: payment that releases itself when the work meets the brief">
+  <meta property="og:description" content="Money held in PayPal, released by an AI arbiter the moment the work passes every agreed criterion.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="modulepreload" href="/app.js">
+  <!-- Fonts load without blocking the first paint; the system font shows until they arrive. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap"></noscript>
+  <!--CONFIG-->
 </head>
-<body>
+<body data-page="home">
   <a class="skip" href="#main">Skip to content</a>
-  <header class="topbar">
-    <a class="brand" href="#/" aria-label="Verdict home">
-      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="16" cy="16" r="9.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M11 16.5l3.4 3.4L21.5 12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Verdict</span>
-    </a>
-    <div class="modes" id="modes" aria-label="Environment"></div>
+  <header class="site">
+    <div class="topbar">
+      <a class="brand" href="#/" aria-label="Verdict home">
+        <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="16" cy="16" r="9.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M11 16.5l3.4 3.4L21.5 12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Verdict</span>
+      </a>
+      <div class="modes" id="modes" aria-label="Environment"></div>
+    </div>
   </header>
   <main id="main" tabindex="-1"></main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

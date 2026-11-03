@@ -1,6 +1,5 @@
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import { extname, join, normalize, resolve, sep } from 'node:path';
+import { extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from './config.js';
 import { Store } from './store.js';
@@ -9,9 +8,9 @@ import { createPayPalSimulator } from './paypal-sim.js';
 import { createAI } from './ai.js';
 import { createDealService, HttpError } from './deals.js';
 import { DEMO_BRIEF, serveSample } from './samples.js';
+import { createStatic } from './static.js';
 
 const PUBLIC_DIR = resolve(fileURLToPath(new URL('../public', import.meta.url)));
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json' };
 
 export function createApp(overrides = {}) {
   const config = loadConfig(overrides);
@@ -45,7 +44,7 @@ export function createApp(overrides = {}) {
 
   route('GET', '/api/health', () => ({ ok: true }));
 
-  route('GET', '/api/config', () => ({
+  const publicConfig = () => ({
     paypalMode: config.paypal.mode,
     paypalClientId: config.paypal.mode === 'sandbox' ? config.paypal.clientId : null,
     currency: config.paypal.currency,
@@ -55,7 +54,9 @@ export function createApp(overrides = {}) {
     platformFeePercent: config.platformFeePercent,
     maxAttempts: config.maxAttempts,
     demoBrief: { ...DEMO_BRIEF, freelancerEmail: process.env.DEMO_FREELANCER_EMAIL || '' },
-  }));
+  });
+  route('GET', '/api/config', publicConfig);
+  const serveStatic = createStatic(PUBLIC_DIR, { getConfig: publicConfig });
 
   route('POST', '/api/criteria/compile', async ({ body }) => {
     const description = String(body.description || '').trim();
@@ -127,19 +128,6 @@ export function createApp(overrides = {}) {
     res.end(body);
   }
 
-  async function serveStatic(pathname, res) {
-    const rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1));
-    const file = normalize(join(PUBLIC_DIR, rel));
-    if (!file.startsWith(PUBLIC_DIR + sep) && file !== PUBLIC_DIR) return false;
-    try {
-      const data = await readFile(file);
-      send(res, 200, data, MIME[extname(file)] || 'application/octet-stream', { 'Cache-Control': 'no-cache' });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://local');
     const { pathname } = url;
@@ -188,8 +176,7 @@ export function createApp(overrides = {}) {
         throw new HttpError(404, 'Not found.');
       }
 
-      if (req.method === 'GET' && (await serveStatic(pathname, res))) return;
-      if (req.method === 'GET' && !extname(pathname)) return void (await serveStatic('/', res));
+      if (serveStatic(req, res, pathname, { fallbackToIndex: !extname(pathname) })) return;
       send(res, 404, 'Not found', 'text/plain');
     } catch (err) {
       const status = err instanceof HttpError ? err.status : err instanceof PayPalError ? 502 : 500;

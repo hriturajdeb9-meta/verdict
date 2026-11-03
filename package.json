@@ -1,0 +1,18 @@
+{
+  "name": "verdict",
+  "version": "1.0.0",
+  "description": "Money that releases itself when AI confirms the work is done. Conditional payments for freelance work, built on PayPal authorize/capture and Payouts with an AI arbiter.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20.12"
+  },
+  "keywords": ["paypal", "ai", "escrow", "conditional-payments", "freelance", "claude", "hackathon"],
+  "license": "MIT",
+  "dependencies": {}
+}

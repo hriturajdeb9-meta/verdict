@@ -37,7 +37,12 @@ npm test
    - In the app's **Features** settings, make sure **Payouts** is enabled (it pays the freelancer).
    - Under **Testing Tools → Sandbox Accounts** you'll find a sandbox **Personal** account (the client/buyer who approves the hold) and a **Business** account (the platform that captures and pays out). Create a second Personal account to act as the freelancer and note its email.
 3. **Claude**: put your key from https://console.anthropic.com in `ANTHROPIC_API_KEY`. The default model is `claude-sonnet-5-5` (override with `ANTHROPIC_MODEL`).
-4. `npm start`. The top bar now shows "PayPal sandbox" and "Claude arbiter".
+4. Verify every PayPal call with one command (it prints a link for you to approve the hold as the sandbox buyer):
+   ```bash
+   npm run sandbox-check -- --payout-email <freelancer sandbox email>
+   npm run sandbox-check -- --void          # tests the cancel path
+   ```
+5. `npm start`. The top bar now shows "PayPal sandbox" and "Claude arbiter".
 
 When funding a deal, the PayPal button opens the real sandbox checkout. Sign in with the sandbox Personal (buyer) account. After the release, check the freelancer's sandbox account in https://sandbox.paypal.com to see the payout arrive.
 
@@ -147,6 +152,7 @@ docs/            Devpost write-up, video script, submission checklist
 | `PLATFORM_FEE_PERCENT` | `0` | Fee kept from each payout (0 to 20) |
 | `MAX_REVIEW_ATTEMPTS` | `3` | Reviews before a human must decide |
 | `ALLOW_PRIVATE_URLS` | `true` locally, `false` in production | Allow reviewing localhost URLs |
+| `REVIEW_STEP_DELAY_MS` | `0` | Pause between checks so a live demo shows each one being decided (try 700) |
 | `GITHUB_TOKEN` | empty | Optional; raises GitHub API rate limits for repo review |
 | `PORT`, `DATA_FILE` | `3000`, `./data/verdict.json` | Server port and storage file |
 

@@ -20,8 +20,12 @@ export function scanForInjection(sources) {
     for (const p of PATTERNS) {
       const m = text.match(p.re);
       if (m) {
-        const i = Math.max(0, m.index - 60);
-        findings.push({ where, reason: p.why, excerpt: text.slice(i, m.index + m[0].length + 60).replace(/\s+/g, ' ').trim() });
+        // Widen to whole words so the excerpt reads cleanly.
+        let i = Math.max(0, m.index - 60);
+        while (i > 0 && /\S/.test(text[i - 1])) i--;
+        let j = Math.min(text.length, m.index + m[0].length + 60);
+        while (j < text.length && /\S/.test(text[j])) j++;
+        findings.push({ where, reason: p.why, excerpt: text.slice(i, j).replace(/\s+/g, ' ').trim() });
       }
     }
   }

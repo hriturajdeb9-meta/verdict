@@ -7,12 +7,21 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "sandbox-check": "node scripts/sandbox-check.js"
   },
   "engines": {
     "node": ">=20.12"
   },
-  "keywords": ["paypal", "ai", "escrow", "conditional-payments", "freelance", "claude", "hackathon"],
+  "keywords": [
+    "paypal",
+    "ai",
+    "escrow",
+    "conditional-payments",
+    "freelance",
+    "claude",
+    "hackathon"
+  ],
   "license": "MIT",
   "dependencies": {}
 }

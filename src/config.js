@@ -26,6 +26,8 @@ export function loadConfig(overrides = {}) {
     dataFile: resolve(env.DATA_FILE || './data/verdict.json'),
     platformFeePercent: Math.min(Math.max(Number(env.PLATFORM_FEE_PERCENT || 0), 0), 20),
     maxAttempts: Math.max(Number(env.MAX_REVIEW_ATTEMPTS || 3), 1),
+    // Optional pause between checks so a live demo shows each criterion being decided.
+    reviewStepDelayMs: Math.min(Math.max(Number(env.REVIEW_STEP_DELAY_MS || 0), 0), 5000),
     allowPrivateUrls: bool(env.ALLOW_PRIVATE_URLS, !isProd),
     paypal: {
       mode: paypalClientId && paypalSecret ? 'sandbox' : 'simulated',

@@ -114,6 +114,29 @@ export function createPayPalClient({ getApiBase, clientId, clientSecret, currenc
       };
     },
 
+    async getOrder(orderId) {
+      const { data } = await call('GET', `/v2/checkout/orders/${encodeURIComponent(orderId)}`);
+      return data;
+    },
+
+    /** Same hold, but with return URLs so the approval link works outside the JS SDK (used by scripts/sandbox-check.js). */
+    async createAuthorizeOrderWithRedirect({ dealId, title, amount, returnUrl, cancelUrl }) {
+      const { data, debugId } = await call(
+        'POST',
+        '/v2/checkout/orders',
+        {
+          intent: 'AUTHORIZE',
+          purchase_units: [{ reference_id: dealId, custom_id: dealId, description: `Verdict: ${title}`.slice(0, 127), amount: { currency_code: currency, value: amount } }],
+          payment_source: {
+            paypal: { experience_context: { return_url: returnUrl, cancel_url: cancelUrl, user_action: 'CONTINUE', shipping_preference: 'NO_SHIPPING', brand_name: 'Verdict' } },
+          },
+        },
+        { requestId: `order-${dealId}-${Date.now()}` },
+      );
+      const approveUrl = data.links?.find((l) => l.rel === 'payer-action' || l.rel === 'approve')?.href;
+      return { orderId: data.id, status: data.status, approveUrl, debugId };
+    },
+
     async getAuthorization(authorizationId) {
       const { data } = await call('GET', `/v2/payments/authorizations/${encodeURIComponent(authorizationId)}`);
       return data;

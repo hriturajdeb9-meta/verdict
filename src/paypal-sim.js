@@ -65,6 +65,13 @@ export function createPayPalSimulator() {
       });
     }
 
+    mm = path.match(/^\/v2\/checkout\/orders\/([\w-]+)$/);
+    if (m === 'GET' && mm) {
+      const order = orders.get(mm[1]);
+      if (!order) return error(404, 'RESOURCE_NOT_FOUND', 'INVALID_RESOURCE_ID', 'Specified resource ID does not exist.');
+      return json(200, order);
+    }
+
     mm = path.match(/^\/v2\/checkout\/orders\/([\w-]+)\/authorize$/);
     if (m === 'POST' && mm) {
       return withIdempotency(req, () => {

@@ -242,6 +242,7 @@ export function createDealService({ store, paypal, ai, config }) {
     const v = sub.verdict;
     const save = () => store.putDeal(deal);
     const setCheck = (id, patch) => Object.assign(v.checks.find((c) => c.criterionId === id), patch);
+    const pace = () => (config.reviewStepDelayMs ? new Promise((r) => setTimeout(r, config.reviewStepDelayMs)) : null);
 
     // 1) Evidence
     const repo = sub.repoUrl ? await collectRepoEvidence(sub.repoUrl, { githubToken: config.github.token }) : null;
@@ -272,6 +273,7 @@ export function createDealService({ store, paypal, ai, config }) {
     for (const c of deal.criteria.filter((c) => KINDS[c.kind].automated)) {
       setCheck(c.id, { state: 'running' });
       save();
+      await pace();
       const r = await runAutomatedCheck(c, ctx);
       setCheck(c.id, { state: r.passed ? 'passed' : 'failed', confidence: 1, reasoning: r.reasoning, evidence: r.evidence });
       automated.push({ criterionId: c.id, title: c.title, ...r });
@@ -282,6 +284,7 @@ export function createDealService({ store, paypal, ai, config }) {
     const aiCriteria = deal.criteria.filter((c) => !KINDS[c.kind].automated);
     for (const c of aiCriteria) setCheck(c.id, { state: 'running' });
     save();
+    await pace();
     let aiFailed = false;
     try {
       const out = await ai.judge({ deal, aiCriteria, automated, page, repo, injection: v.injection });

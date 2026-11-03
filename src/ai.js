@@ -144,8 +144,13 @@ export function createAI(aiConfig) {
     const models = geminiModel ? [geminiModel] : aiConfig.geminiModels;
     let lastErr;
     for (const model of models) {
+      // Gemini 3 models think by default; a low thinking level keeps reviews fast.
+      let thinking = /^gemini-3/.test(model);
       for (let attempt = 0; attempt < 3; attempt++) {
+        const started = Date.now();
         try {
+          const generationConfig = { temperature: 0.2, maxOutputTokens: Math.max(maxTokens, 4096) };
+          if (thinking) generationConfig.thinkingConfig = { thinkingLevel: 'low' };
           const res = await fetch(`${aiConfig.geminiApiBase}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
             method: 'POST',
             headers: { 'x-goog-api-key': aiConfig.geminiKey, 'content-type': 'application/json' },
@@ -154,14 +159,20 @@ export function createAI(aiConfig) {
               contents: [{ role: 'user', parts: [{ text: content }] }],
               tools: [{ functionDeclarations: [{ name: tool.name, description: tool.description, parameters: toGeminiSchema(tool.input_schema) }] }],
               toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: [tool.name] } },
-              generationConfig: { temperature: 0.2, maxOutputTokens: Math.max(maxTokens, 4096) },
+              generationConfig,
             }),
             signal: AbortSignal.timeout(aiConfig.timeoutMs),
           });
           const data = await res.json().catch(() => ({}));
+          console.log(`[ai] gemini ${model} ${tool.name} -> ${res.status} in ${Date.now() - started} ms`);
           if (res.status === 404) {
             lastErr = new Error(`Gemini model ${model} is not available`);
             break; // try the next model
+          }
+          if (res.status === 400 && thinking && /thinking/i.test(data?.error?.message || '')) {
+            thinking = false; // this model doesn't take a thinking level; retry without it
+            attempt--;
+            continue;
           }
           if (res.status === 429 || res.status >= 500) {
             lastErr = new Error(data?.error?.message || `Gemini API ${res.status}`);
@@ -177,6 +188,7 @@ export function createAI(aiConfig) {
         } catch (err) {
           lastErr = err;
           if (err.name === 'TimeoutError') break;
+          if (/API key not valid|PERMISSION_DENIED/i.test(err.message)) throw err;
         }
       }
     }

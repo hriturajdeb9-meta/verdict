@@ -147,10 +147,20 @@ export function createDealService({ store, paypal, ai, config }) {
 
   // ------------------------------------------------------------------ fund (PayPal hold)
 
-  async function createOrder(deal, role) {
+  async function createOrder(deal, role, { returnBase } = {}) {
     require(deal, role, 'client', ['awaiting_funding']);
     return withLock(deal, async () => {
-      const order = await paypal.createAuthorizeOrder({ dealId: deal.id, title: deal.title, amount: deal.amount });
+      // With returnBase, PayPal checkout runs as a full-page redirect instead of a popup
+      // (for browsers that block popups); /paypal/return then places the hold.
+      const order = returnBase
+        ? await paypal.createAuthorizeOrderWithRedirect({
+            dealId: deal.id,
+            title: deal.title,
+            amount: deal.amount,
+            returnUrl: `${returnBase}/paypal/return?deal=${deal.id}`,
+            cancelUrl: `${returnBase}/paypal/return?deal=${deal.id}&cancelled=1`,
+          })
+        : await paypal.createAuthorizeOrder({ dealId: deal.id, title: deal.title, amount: deal.amount });
       deal.paypal.orderId = order.orderId;
       event(deal, 'paypal', 'order_created', `PayPal order created with intent AUTHORIZE for $${deal.amount}.`, { orderId: order.orderId, debugId: order.debugId });
       store.putDeal(deal);
@@ -178,6 +188,13 @@ export function createDealService({ store, paypal, ai, config }) {
       });
       return store.putDeal(deal);
     });
+  }
+
+  /** Buyer came back from a redirect checkout. Bound to the order this deal created, so no token is needed. */
+  async function authorizeReturn(deal, orderId) {
+    if (!orderId || orderId !== deal.paypal.orderId) throw new HttpError(400, 'This PayPal order does not belong to this deal.');
+    if (deal.paypal.authorizationId) return deal; // already funded (page refresh)
+    return authorize(deal, 'client', orderId);
   }
 
   // ------------------------------------------------------------------ submit & review
@@ -452,6 +469,7 @@ export function createDealService({ store, paypal, ai, config }) {
     accept,
     createOrder,
     authorize,
+    authorizeReturn,
     submit,
     escalate,
     resolve,

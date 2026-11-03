@@ -22,7 +22,7 @@ npm start
 
 Open http://localhost:3000 and click **Try it with a sample brief**. In this mode the top bar shows "PayPal simulated" and "Offline arbiter".
 
-Run the test suite (16 end-to-end and unit tests):
+Run the test suite (17 end-to-end and unit tests):
 
 ```bash
 npm test

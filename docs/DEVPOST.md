@@ -40,7 +40,7 @@ Verdict also defends itself. A deliverable is written by the person who wants to
 - **AI:** Google Gemini (`gemini-3.8-flash`) via `generateContent` with forced function calling for structured output; the same pipeline also runs on Anthropic Claude. One function compiles criteria; another records rulings, a summary and fix notes. The arbiter's prompt marks the deliverable as untrusted and passes code-measured results as facts it may not contradict.
 - **Evidence:** our own HTML parser and CSS selector engine (no dependencies) to inspect forms, headings, visible versus hidden text and API responses, plus the GitHub API for repository evidence.
 - **Front end:** vanilla JavaScript, no build step. Every ruling is "stamped" (Released, Held or Review), and an audit trail shows every PayPal ID.
-- **Tests:** 16 `node:test` tests run the full flow end to end, against a built-in PayPal simulator and fake Gemini and Claude APIs. A separate `npm run sandbox-check` script verifies every PayPal call against the real sandbox.
+- **Tests:** 17 `node:test` tests run the full flow end to end, against a built-in PayPal simulator and fake Gemini and Claude APIs. A separate `npm run sandbox-check` script verifies every PayPal call against the real sandbox.
 
 ## Tools used (model and AI service)
 

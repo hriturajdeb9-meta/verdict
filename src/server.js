@@ -95,12 +95,13 @@ export function createApp(overrides = {}) {
       const deal = loadDeal(params);
       const r = role(req, deal);
       if (r === 'viewer') throw new HttpError(403, 'Open this deal from the link you were given.');
-      const out = await fn(deal, r, body);
+      const out = await fn(deal, r, body, req);
       return out && out.id === deal.id ? deals.view(out, r) : out;
     });
 
   action('accept', (d, r) => deals.accept(d, r));
-  action('paypal/order', (d, r) => deals.createOrder(d, r));
+  const originOf = (req) => `${String(req.headers['x-forwarded-proto'] || 'http').split(',')[0]}://${req.headers.host}`;
+  action('paypal/order', (d, r, b, req) => deals.createOrder(d, r, b.redirect ? { returnBase: originOf(req) } : {}));
   action('paypal/authorize', (d, r, b) => deals.authorize(d, r, b.orderId));
   action('submissions', (d, r, b) => deals.submit(d, r, b));
   action('escalate', (d, r, b) => deals.escalate(d, r, b.reason));
@@ -149,6 +150,18 @@ export function createApp(overrides = {}) {
         if (raw && !String(req.headers['content-type']).includes('urlencoded')) body = JSON.parse(raw);
         const out = sim.handle(req, pathname.slice('/paypal-sim'.length), body);
         return send(res, out.status, JSON.stringify(out.body), 'application/json', out.headers);
+      }
+
+      if (req.method === 'GET' && pathname === '/paypal/return') {
+        const deal = store.getDeal(String(url.searchParams.get('deal') || ''));
+        if (!deal) return send(res, 404, 'Deal not found', 'text/plain');
+        try {
+          if (!url.searchParams.get('cancelled')) await deals.authorizeReturn(deal, String(url.searchParams.get('token') || ''));
+        } catch (err) {
+          console.error('PayPal return:', err.message);
+        }
+        res.writeHead(302, { Location: `/#/deal/${deal.id}` });
+        return res.end();
       }
 
       const sample = serveSample(pathname);

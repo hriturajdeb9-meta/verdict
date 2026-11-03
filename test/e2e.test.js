@@ -134,6 +134,24 @@ describe('full payment flow (simulated PayPal, offline arbiter)', () => {
     assert.equal((await h.ok('GET', '/api/deals?tokens=')).length, 0);
   });
 
+  test('redirect checkout: returning from PayPal places the hold', async () => {
+    const cfg = await h.ok('GET', '/api/config');
+    const { criteria } = await h.ok('POST', '/api/criteria/compile', { description: cfg.demoBrief.description });
+    const c = await h.ok('POST', '/api/deals', { ...cfg.demoBrief, freelancerEmail: 'a@personal.example.com', criteria });
+    await h.ok('POST', `/api/deals/${c.deal.id}/accept`, {}, c.freelancerToken);
+    const order = await h.ok('POST', `/api/deals/${c.deal.id}/paypal/order`, { redirect: true }, c.clientToken);
+    assert.ok(order.approveUrl);
+    await fetch(`${h.base}/paypal-sim/simulate/approve/${order.orderId}`, { method: 'POST' });
+    const ret = await fetch(`${h.base}/paypal/return?deal=${c.deal.id}&token=${order.orderId}`, { redirect: 'manual' });
+    assert.equal(ret.status, 302);
+    assert.equal(ret.headers.get('location'), `/#/deal/${c.deal.id}`);
+    const d = await h.ok('GET', `/api/deals/${c.deal.id}`, null, c.clientToken);
+    assert.equal(d.status, 'funded');
+    // A forged return for another order is ignored.
+    const bad = await fetch(`${h.base}/paypal/return?deal=${c.deal.id}&token=NOT-THE-ORDER`, { redirect: 'manual' });
+    assert.equal(bad.status, 302);
+  });
+
   test('the client can cancel before work is submitted, which voids the hold', async () => {
     const deal = await fundedDeal(h);
     const c = await h.ok('POST', `/api/deals/${deal.id}/cancel`, {}, deal.ct);

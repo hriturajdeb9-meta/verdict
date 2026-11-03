@@ -443,7 +443,8 @@ function actionPanel(v) {
       p.push(html`<div class="panel stack"><h2>Hold ${money(v.amount)} with PayPal</h2>
         <p class="muted">You approve an authorization: the money is reserved in your PayPal account, not charged. It's captured only when the work passes, or when you approve it yourself. If the deal is cancelled, the hold is voided.</p>
         ${CONFIG.paypalMode === 'sandbox'
-          ? html`<p class="small muted">Sign in with a PayPal sandbox personal (buyer) account.</p><div id="paypal-buttons"></div>`
+          ? html`<p class="small muted">Sign in with a PayPal sandbox personal (buyer) account.</p><div id="paypal-buttons"></div>
+            <p class="small muted">PayPal window didn't open? <button class="btn quiet" type="button" data-act="pp-redirect">Continue to PayPal in this tab</button></p>`
           : html`<div class="callout seal"><h3>Simulated PayPal</h3><p class="small">No PayPal keys are configured, so the built-in simulator stands in for the PayPal approval window. Add sandbox keys to use real PayPal.</p></div>
             <div class="btn-row"><button class="btn primary" type="button" data-act="sim-fund">Approve hold with simulated PayPal</button><button class="btn danger" type="button" data-act="cancel">Cancel deal</button></div>`}
       </div>`);
@@ -592,6 +593,13 @@ main.addEventListener('click', async (e) => {
     return busy(btn, async () => { paint(await post('cancel')); toast('Deal cancelled'); });
   }
   if (act === 'retry') return busy(btn, async () => paint(await post('retry-settlement')));
+  if (act === 'pp-redirect') {
+    return busy(btn, async () => {
+      const order = await post('paypal/order', { redirect: true });
+      if (!order.approveUrl) throw new Error('PayPal did not return a checkout link.');
+      location.href = order.approveUrl;
+    });
+  }
   if (act === 'sim-fund') {
     return busy(btn, async () => {
       const order = await post('paypal/order');

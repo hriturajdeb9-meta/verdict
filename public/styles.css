@@ -360,9 +360,9 @@ body[data-page=home] main { max-width: none; padding: 0 0 0; }
 .contract .stamp.changes_requested { color: #b42d26; }
 
 /* sections below the hero */
-.home-deals, .why, .how, .guards, .under, .site-foot { max-width: 1160px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+.home-deals, .home-why, .how, .guards, .under, .site-foot { max-width: 1160px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
 .home-deals { padding-top: 48px; }
-.why { padding-top: 96px; }
+.home-why { padding-top: 96px; }
 .why-h { font-size: clamp(28px, 3.6vw, 44px); line-height: 1.1; letter-spacing: -0.022em; max-width: 21ch; }
 .why-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin-top: 34px; }
 .why-cols p { font-size: 17px; line-height: 1.5; color: var(--muted); border-top: 2px solid var(--line); padding-top: 16px; }
@@ -397,7 +397,7 @@ body[data-page=home] main { max-width: none; padding: 0 0 0; }
 }
 @media (max-width: 560px) {
   .band { padding: 20px 16px 56px; }
-  .home-deals, .why, .how, .guards, .under, .site-foot { padding-left: 16px; padding-right: 16px; }
+  .home-deals, .home-why, .how, .guards, .under, .site-foot { padding-left: 16px; padding-right: 16px; }
   .site-foot { background-position: 16px 0; background-size: calc(100% - 32px) 1px; }
   body[data-page=home] .modes { display: none; }
   .hero-lede { font-size: 17px; }

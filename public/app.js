@@ -251,7 +251,7 @@ async function renderHome() {
       <div class="deal-list" id="deal-list"></div>
     </section>
 
-    <section class="why">
+    <section class="home-why">
       <h2 class="why-h">Escrow holds the money. Nobody decides when the work is done.</h2>
       <div class="why-cols">
         <p><b>Freelancers</b> deliver, then chase invoices for weeks, or argue about whether “done” was done.</p>

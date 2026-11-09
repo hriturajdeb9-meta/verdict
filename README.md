@@ -10,6 +10,13 @@ Verdict is a conditional-payment app for freelance work. The client's money is *
 - Runs fully offline out of the box (simulated PayPal, heuristic arbiter), so anyone can try it in 30 seconds.
 - Add PayPal sandbox keys and a Gemini (free) or Claude API key and it runs against the real PayPal sandbox with a real AI arbiter.
 
+| | |
+|---|---|
+| ![Verdict home page](docs/screenshots/home.png) | ![Acceptance criteria drafted by Gemini from a plain brief](docs/screenshots/criteria.png) |
+| ![A verdict that holds the money, with evidence for each failed criterion](docs/screenshots/held.png) | ![The deal paid: hold captured and PayPal payout confirmed](docs/screenshots/paid.png) |
+
+Screens from a real run on the hosted demo (PayPal sandbox and Gemini).
+
 ---
 
 ## For judges: test it in 2 minutes
@@ -18,7 +25,7 @@ Verdict is a conditional-payment app for freelance work. The client's money is *
 - **Hosted demo:** https://verdict-jpko.onrender.com. It runs on the real PayPal sandbox with Gemini. It stays up until judging ends.
 - **PayPal sandbox buyer** (approves the hold): the email and password are in the Devpost testing instructions. It's a sandbox test account with no real money.
 - **Steps:**
-  1. Click **Try it with a sample brief**, then **Draft criteria**, then **Create deal**.
+  1. Click **Try the live demo**, then **Draft criteria**, then **Create deal**.
   2. Switch to **Freelancer** and click **Accept criteria**.
   3. Switch to **Client** and click the PayPal button, or **Continue to PayPal in this tab** if your browser blocks the popup. Log in as the sandbox buyer and approve.
   4. Switch to **Freelancer** and submit **Incomplete site** (the result is HELD with fix notes), then **Finished site** (the result is RELEASED: capture and payout).

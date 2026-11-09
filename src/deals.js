@@ -315,6 +315,13 @@ export function createDealService({ store, paypal, ai, config }) {
       v.summary = 'The AI reviewer was unavailable, so this submission needs a human decision.';
       v.fixNotes = [];
     }
+    // Every failed criterion gets a fix note and passed ones get none, whatever the model returned.
+    if (!aiFailed) {
+      const notes = v.fixNotes || [];
+      v.fixNotes = v.checks
+        .filter((c) => c.state === 'failed')
+        .map((c) => notes.find((n) => n.criterionId === c.criterionId) || { criterionId: c.criterionId, note: c.reasoning });
+    }
 
     // 5) Decision. Money moves automatically only when every required criterion passed,
     //    nothing tried to manipulate the reviewer, and the AI actually ran.

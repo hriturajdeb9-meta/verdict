@@ -277,7 +277,8 @@ export function createAI(aiConfig) {
           passed: !!j.passed,
           confidence: Math.min(Math.max(Number(j.confidence) || 0, 0), 1),
           reasoning: String(j.reasoning || '').slice(0, 600),
-          evidence: j.evidence ? String(j.evidence).slice(0, 300) : null,
+          // Models sometimes return a quoted excerpt with literal "\n"; show real line breaks.
+          evidence: j.evidence ? String(j.evidence).replace(/\\n/g, '\n').slice(0, 300) : null,
         }));
       // A criterion the model skipped is treated as failed, never as passed.
       for (const c of aiCriteria) {

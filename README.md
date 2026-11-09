@@ -40,7 +40,7 @@ cd verdict
 npm start
 ```
 
-Open http://localhost:3000 and click **Try it with a sample brief**. In this mode the top bar shows "PayPal simulated" and "Offline arbiter".
+Open http://localhost:3000 and click **Try the live demo**. In this mode the top bar shows "PayPal simulated" and "Offline arbiter".
 
 Run the test suite (20 end-to-end and unit tests):
 

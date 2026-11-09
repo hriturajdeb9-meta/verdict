@@ -163,7 +163,7 @@ docs/            Devpost write-up, video script, submission checklist
 | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | empty | PayPal sandbox app credentials. Empty means simulated PayPal. |
 | `PAYPAL_API_BASE` | `https://api-m.sandbox.paypal.com` | PayPal REST base URL |
 | `GEMINI_API_KEY` | empty | Google Gemini API key (free tier available) |
-| `GEMINI_MODEL` | `gemini-3.6-flash,gemini-3.8-flash,gemini-3.5-flash-lite,gemini-2.5-flash` | Models to try, in order |
+| `GEMINI_MODEL` | `gemini-3.6-flash,gemini-3.5-flash-lite,gemini-3.8-flash,gemini-2.5-flash` | Models to try, in order |
 | `ANTHROPIC_API_KEY` | empty | Claude API key (used instead of Gemini when set). With no AI key, the offline heuristic arbiter runs. |
 | `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Claude model |
 | `PLATFORM_FEE_PERCENT` | `0` | Fee kept from each payout (0 to 20) |

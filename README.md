@@ -15,7 +15,7 @@ Verdict is a conditional-payment app for freelance work. The client's money is *
 ## For judges: test it in 2 minutes
 
 - **Demo video:** https://youtu.be/GR6o8TgyQSY
-- **Hosted demo:** https://verdict-jpko.onrender.com. It runs on the real PayPal sandbox with Gemini. It's on Render's free tier, so the first load after a quiet period can take up to a minute.
+- **Hosted demo:** https://verdict-jpko.onrender.com. It runs on the real PayPal sandbox with Gemini. It stays up until judging ends.
 - **PayPal sandbox buyer** (approves the hold): the email and password are in the Devpost testing instructions. It's a sandbox test account with no real money.
 - **Steps:**
   1. Click **Try it with a sample brief**, then **Draft criteria**, then **Create deal**.
@@ -176,6 +176,8 @@ docs/            Devpost write-up, video script, submission checklist
 ## Deploy (Render)
 
 The hosted demo runs on Render, deployed from this repo's `render.yaml` Blueprint, so every push to `main` redeploys automatically.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/hriturajdeb9-meta/verdict)
 
 
 The repo includes `render.yaml`. In Render choose **New → Blueprint**, point it at your fork, and set `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` and `GEMINI_API_KEY` in the dashboard. Data is stored in a JSON file; on Render's free tier it resets on redeploy, which is fine for a demo.
